@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from datetime import timedelta
+import sys
 
 from django.core.exceptions import MultipleObjectsReturned, ValidationError
 from django.db import models
@@ -9,10 +10,60 @@ from django.db.models import signals
 from django.utils.translation import ugettext_lazy as _
 
 from celery import schedules
-from celery.five import python_2_unicode_compatible
 
 from . import managers
 from .utils import now
+
+# *** PATCH - From newer five, so it will work in Celery 3
+# ********************************************************
+
+PY2 = sys.version_info[0] < 3
+
+
+def python_2_unicode_compatible(cls):
+    """Class decorator to ensure class is compatible with Python 2."""
+    return python_2_non_unicode_str(python_2_non_unicode_repr(cls))
+
+
+def python_2_non_unicode_repr(cls):
+    """Ensure cls.__repr__ returns unicode.
+    A class decorator that ensures ``__repr__`` returns non-unicode
+    when running under Python 2.
+    """
+    if PY2:
+        try:
+            cls.__dict__['__repr__']
+        except KeyError:
+            pass
+        else:
+            def __repr__(self, *args, **kwargs):
+                return self.__unicode_repr__(*args, **kwargs).encode(
+                    'utf-8', 'replace')
+            cls.__unicode_repr__, cls.__repr__ = cls.__repr__, __repr__
+    return cls
+
+
+def python_2_non_unicode_str(cls):
+    """Python 2 class string compatibility.
+    A class decorator that defines ``__unicode__`` and ``__str__`` methods
+    under Python 2.  Under Python 3 it does nothing.
+    To support Python 2 and 3 with a single code base, define a ``__str__``
+    method returning text and apply this decorator to the class.
+    """
+    if PY2:
+        try:
+            cls.__dict__['__str__']
+        except KeyError:
+            pass
+        else:
+            def __str__(self, *args, **kwargs):
+                return self.__unicode__(*args, **kwargs).encode(
+                    'utf-8', 'replace')
+            cls.__unicode__, cls.__str__ = cls.__str__, __str__
+    return cls
+
+# ********************************************************
+
 
 DAYS = 'days'
 HOURS = 'hours'

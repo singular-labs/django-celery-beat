@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from celery import current_app
 from celery.utils import cached_property
-from kombu.utils.json import loads
+from json import loads
 
 from .models import PeriodicTask, IntervalSchedule, CrontabSchedule
 from .utils import is_database_scheduler
