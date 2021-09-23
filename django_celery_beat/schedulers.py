@@ -180,12 +180,12 @@ class DatabaseScheduler(Scheduler):
         self._finalize = Finalize(self, self.sync, exitpriority=5)
         self.max_interval = (
             kwargs.get('max_interval') or
-            self.app.conf.beat_max_loop_interval or
+            self.app.conf.CELERYBEAT_MAX_LOOP_INTERVAL or
             DEFAULT_MAX_INTERVAL)
 
     def setup_schedule(self):
         self.install_default_entries(self.schedule)
-        self.update_from_dict(self.app.conf.beat_schedule)
+        self.update_from_dict(self.app.conf.CELERYBEAT_SCHEDULE)
 
     def all_as_schedule(self):
         debug('DatabaseScheduler: Fetching database schedule')
@@ -254,7 +254,7 @@ class DatabaseScheduler(Scheduler):
 
     def install_default_entries(self, data):
         entries = {}
-        if self.app.conf.result_expires:
+        if self.app.conf.CELERY_TASK_RESULT_EXPIRES:
             entries.setdefault(
                 'celery.backend_cleanup', {
                     'task': 'celery.backend_cleanup',
